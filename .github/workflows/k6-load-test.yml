@@ -29,7 +29,7 @@ jobs:
         run: k6 run --out json=results.json tests/load_test.js  
 
       - name: Upload Test Results  
-        uses: actions/upload-artifact@v3  # ✅ Updated to v3
+        uses: actions/upload-artifact@v4  # ✅ Updated to v3
         with:  
           name: k6-results  
           path: results.json  
