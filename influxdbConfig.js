@@ -10,7 +10,7 @@ export let options = {
       name: "My Load Test"
     },
     influxDB: {
-      address: 'http://localhost:8086',
+      address: 'http://172.17.0.4:8086',
       database: 'k6'
     }
   }
