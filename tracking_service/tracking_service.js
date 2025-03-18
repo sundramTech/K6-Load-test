@@ -124,7 +124,7 @@ export default function () {
 
   // 8. Get Location Details External
   responses.push(
-    http.get(`${BASE_URL}/v2/trip/locationDetailExternal?encrypted_trip_id=9b1f702f94fd88f1736b8fc2&page_no=2`, {
+    http.get(`${BASE_URL}/v2/trip/locationDetailExternal?encrypted_trip_id=9b1f702f94fd88f1736b8fc2&page_no=1`, {
       headers
     })
   );
