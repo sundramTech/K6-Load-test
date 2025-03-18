@@ -122,20 +122,20 @@ export default function () {
     })
   );
 
-  // 8. Refresh Consent Status
+  // 8. Get Location Details External
+  responses.push(
+    http.get(`${BASE_URL}/v2/trip/locationDetailExternal?encrypted_trip_id=9b1f702f94fd88f1736b8fc2&page_no=2`, {
+      headers
+    })
+  );
+
+  // 9. Refresh Consent Status
   let refreshConsentPayload = JSON.stringify({
     mobile_number: "",
     trip_number: "TRPFM25001561",
   });
 
   responses.push(http.post(`${BASE_URL}/v1/trip/refreshConsent`, refreshConsentPayload, { headers }));
-
-  // 9. Get Location Details
-  responses.push(
-    http.get(`${BASE_URL}/v2/trip/locationDetailExternal?encrypted_trip_id=9b1f702f94fd88f1736b8fc2&page_no=1`, {
-      headers,
-    })
-  );
 
   // Validate responses
   for (let i = 0; i < responses.length; i++) {
