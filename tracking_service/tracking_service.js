@@ -1,30 +1,20 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
-import { IFrameElement } from "k6/html";
+import { spikeTest, loadTest, stressTest } from "./Scenarios.js";
+import { config } from "./Config.js";
+// Get scenario from CLI argument (default: loadTest)
 
-// Load test settings
-export let options = {
-    stages: [
-      { duration: '30s', target: 10 }, // Ramp up to 10 users
-      { duration: '1m', target: 10 },  // Stay at 10 users for 1 minute
-      { duration: '30s', target: 0 },  // Ramp down to 0 users
-    ],
-    thresholds: {
-      http_req_duration: ['p(95)<500'], // 95% of requests should be below 500ms
-      http_req_failed: ['rate<0.01'],   // Less than 1% of requests should fail
-    },
-  };
+const scenarioName = __ENV.SCENARIO || "loadTest"; 
 
-// Base URL (DEV only)
-const BASE_URL = "https://dev-tracking.saudabooks.com";
-
-// Common headers
-const headers = {
-  "Content-Type": "application/json",
- "apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbmNyeXB0ZWRfdG9rZW4iOiJkMzA1NjY3NTkwYmNkZmE5NjAzN2IyOTk5MDI4YzZmNzIyIiwiaWF0IjoxNzQyMzA5MjY3fQ.CqnpVG4-_GXVCdsWYOQ5P5unKtJcYt4JQA0AR1JmpC0",
+const scenarios = {
+  spikeTest,
+  loadTest,
+  stressTest,
 };
 
-// API Endpoints
+// Validate scenario and apply it
+export const options = scenarios[scenarioName] || loadTest;
+
 export default function () {
   let responses = [];
 
@@ -49,46 +39,34 @@ export default function () {
       state: "Bihar",
     },
     name: "Namd kumar singh",
-    additional_info: {
-      vehicle_number: "Up56AT2072",
-    },
+    additional_info: { vehicle_number: "Up56AT2072" },
     mobile_number_for_tracking: "8294913792",
   });
 
-  responses.push(http.post(`${BASE_URL}/v1/trip/createAndStart`, tripPayload, { headers }));
+  responses.push(http.post(`${config.BASE_URL}${config.ENDPOINTS.CREATE_TRIP}`, tripPayload, { headers: config.HEADERS }));
 
   // 2. Fetch External Trip Details
-  responses.push(
-    http.get(`${BASE_URL}/v2/trip/tripDetailExternal?encrypted_trip_id=90427528c2ab8bf0773cdf`, {
-      headers,
-    })
-  );
+  responses.push(http.get(`${config.BASE_URL}${config.ENDPOINTS.TRIP_DETAIL}?encrypted_trip_id=${config.TRIP_IDS.ENCRYPTED_TRIP_ID}`, { headers: config.HEADERS }));
 
   // 3. Change Mobile Number for Tracking
   let changeNumberPayload = JSON.stringify({
-    encrypted_trip_id:
-      "d305727082b8d8b27132b283816791a32d26ec27511140c05b2e1a53f2c40167b1d8dc57b5f488e4d461f2ab790fb21b0bb0f328994793ada65367cf0beec3",
-    trip_number: "TRPFM25001561",
+    encrypted_trip_id: config.TRIP_IDS.ENCRYPTED_TRIP_ID,
+    trip_number: config.TRIP_IDS.TRIP_NUMBER,
     mobile_number_for_tracking: "7906411090",
   });
 
-  responses.push(http.patch(`${BASE_URL}/v1/trip/editMobileNumber`, changeNumberPayload, { headers }));
+  responses.push(http.patch(`${config.BASE_URL}${config.ENDPOINTS.EDIT_MOBILE}`, changeNumberPayload, { headers: config.HEADERS }));
 
   // 4. Get Platform API Key
   let apiKeyPayload = JSON.stringify({
-    encrypted_token:
-      "CYVRHQfYYrcScZJZDEIrdj4hGJnM5i0Zb2qiFOGhUbsNAFrwwLVidtIvTOy8R9yId/senQ40dnm4Zf9qL9g1gMn9cqCCWgRbTLSExIY5vxv7+vFO7qLbTIa9NlSemWvp2Elaz6RmScU6tjIeveTxDZvwICol4yFI16i/bnElJ/N8mVBZ2cp31BIWzzs9/NJwJ1/DfQSicOpQgedZUxV+6zg4OEeJ/0s/NoBNLGvJ9AgxjDEFFBYIJsG5rSq2MSGJ7wfdeQx2NWtx7sWht//jCAuVr0NjRZ5i3yGvrgB+2S9HILI7tI+9Kvapng/wlz6oVb+Bvo5OD/KYB51Kz09tHQ==",
-    email_id: "neeraj1@farmart.co",
+    encrypted_token: config.USER_CREDENTIALS.ENCRYPTED_TOKEN,
+    email_id: config.USER_CREDENTIALS.EMAIL,
   });
 
-  responses.push(http.post(`${BASE_URL}/v1/auth/getApiKey`, apiKeyPayload, { headers }));
+  responses.push(http.post(`${config.BASE_URL}${config.ENDPOINTS.GET_API_KEY}`, apiKeyPayload, { headers: config.HEADERS }));
 
   // 5. Fetch Location List
-  responses.push(
-    http.get(`${BASE_URL}/v1/trip/tripDetailExternal?encrypted_trip_id=90427528c2ab8bf0773cdf`, {
-      headers,
-    })
-  );
+  responses.push(http.get(`${config.BASE_URL}${config.ENDPOINTS.TRIP_DETAIL}?encrypted_trip_id=${config.TRIP_IDS.ENCRYPTED_TRIP_ID}`, { headers: config.HEADERS }));
 
   // 6. Edit Location
   let editLocationPayload = JSON.stringify({
@@ -99,8 +77,6 @@ export default function () {
       default_name: "Aihp 2",
       detailed_address: "Aihp 2",
       district: "Gurugram",
-      pincode: null,
-      state: "",
     },
     destination_address: {
       lat: "28.5118514",
@@ -108,46 +84,31 @@ export default function () {
       default_name: "Hanuman Chawk 2",
       detailed_address: "Hanuman Chawk 2",
       district: "Gurugram",
-      pincode: null,
-      state: "",
     },
   });
 
-  responses.push(http.patch(`${BASE_URL}/v1/trip/editTripAddress`, editLocationPayload, { headers }));
+  responses.push(http.patch(`${config.BASE_URL}${config.ENDPOINTS.EDIT_TRIP_ADDRESS}`, editLocationPayload, { headers: config.HEADERS }));
 
   // 7. Fetch Trip Details
-  responses.push(
-    http.get(`${BASE_URL}/v2/trip/tripDetailExternal?encrypted_trip_id=90427528c2ab8bf0773cdf`, {
-      headers,
-    })
-  );
+  responses.push(http.get(`${config.BASE_URL}${config.ENDPOINTS.TRIP_DETAIL}?encrypted_trip_id=${config.TRIP_IDS.ENCRYPTED_TRIP_ID}`, { headers: config.HEADERS }));
 
   // 8. Get Location Details External
-  responses.push(
-    http.get(`${BASE_URL}/v2/trip/locationDetailExternal?encrypted_trip_id=9b1f702f94fd88f1736b8fc2&page_no=1`, {
-      headers
-    })
-  );
+  responses.push(http.get(`${config.BASE_URL}${config.ENDPOINTS.LOCATION_DETAIL}?encrypted_trip_id=9b1f702f94fd88f1736b8fc2&page_no=1`, { headers: config.HEADERS }));
 
   // 9. Refresh Consent Status
   let refreshConsentPayload = JSON.stringify({
     mobile_number: "",
-    trip_number: "TRPFM25001561",
+    trip_number: config.TRIP_IDS.TRIP_NUMBER,
   });
 
-  responses.push(http.post(`${BASE_URL}/v1/trip/refreshConsent`, refreshConsentPayload, { headers }));
+  responses.push(http.post(`${config.BASE_URL}${config.ENDPOINTS.REFRESH_CONSENT}`, refreshConsentPayload, { headers: config.HEADERS }));
 
   // Validate responses
   for (let i = 0; i < responses.length; i++) {
     check(responses[i], {
-      [`Request ${i + 1}: Status is  and reponse is ${JSON.parse(responses[i].status)}`]: (r) => r.status === 200,
+      [`Request ${i + 1}: Status is ${responses[i].status}`]: (r) => r.status === 200,
     });
-    /* if i == 0 then get the trip nmber from response {
-    if (i == 0) {
-       }
-    */
-
   }
 
-  sleep(1); // Add some delay between requests
+  sleep(1); // Add delay between requests
 }
