@@ -57,4 +57,13 @@ export const config = {
   // Randomizable lot IDs for testing variety
   LOT_IDS: ["550", "6354", "6715", "6800", "6900"]
 };
+export default function () {
+  console.log("Config file loaded successfully.");
+  
+  // Optional: Make a test API call to verify config
+  let res = http.get(`${config.BASE_URL}${config.ENDPOINTS.FETCH_STATES}`, {
+    headers: config.HEADERS
+  });
 
+  console.log(`Response status: ${res.status}`);
+}
