@@ -58,9 +58,3 @@ export const config = {
   LOT_IDS: ["550", "6354", "6715", "6800", "6900"]
 };
 
-// Export the default function that K6 will run
-export default function() {
-    // Your test logic goes here
-    // For example:
-    // http.get('http://your-api.com');
-}
