@@ -27,9 +27,11 @@ jobs:
 
       - name: Run Load Tests  
         run: |
+          mkdir -p results
+          shopt -s nullglob  # Ensures no errors if no .js files exist
           for file in tests/*.js; do
             echo "Running $file..."
-            k6 run --out json="results-$(basename "$file" .js).json" "$file"
+            k6 run --out json="results/$(basename "$file" .js).json" "$file" || exit 1
           done
 
       - name: Upload Test Results  
