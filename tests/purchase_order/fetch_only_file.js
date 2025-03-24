@@ -1,4 +1,4 @@
-import "./libs/core.js";
+
 import "./libs/shim/urijs.js";
 
 export let options = { maxRedirects: 4 };
