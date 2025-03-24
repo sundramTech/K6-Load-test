@@ -41,3 +41,11 @@ export const {
   tabFrequencyTrend,
   poDetailsTrend 
 } = trends;
+
+
+
+export default function() {
+  // Your test logic goes here
+  // For example:
+  // http.get('http://your-api.com');
+}

@@ -37,3 +37,10 @@ export const {
   createTripTrend,
   tripDetailTrend 
 } = trends;
+
+
+export default function() {
+  // Your test logic goes here
+  // For example:
+  // http.get('http://your-api.com');
+}

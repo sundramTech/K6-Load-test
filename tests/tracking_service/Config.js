@@ -25,4 +25,11 @@ export const config = {
       EMAIL: "neeraj1@farmart.co",
       ENCRYPTED_TOKEN: "CYVRHQfYYrcScZJZDEIrdj4hGJnM5i0Zb2qiFOGhUbsNAFrwwLVidtIvTOy8R9yId/senQ40dnm4Zf9qL9g1gMn9cqCCWgRbTLSExIY5vxv7+vFO7qLbTIa9NlSemWvp2Elaz6RmScU6tjIeveTxDZvwICol4yFI16i/bnElJ/N8mVBZ2cp31BIWzzs9/NJwJ1/DfQSicOpQgedZUxV+6zg4OEeJ/0s/NoBNLGvJ9AgxjDEFFBYIJsG5rSq2MSGJ7wfdeQx2NWtx7sWht//jCAuVr0NjRZ5i3yGvrgB+2S9HILI7tI+9Kvapng/wlz6oVb+Bvo5OD/KYB51Kz09tHQ==",
     }
+    
   };
+
+export default function() {
+  // Your test logic goes here
+  // For example:
+  // http.get('http://your-api.com');
+}
