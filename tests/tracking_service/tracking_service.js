@@ -1,6 +1,15 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
-import { spikeTest, loadTest, stressTest } from "./Scenarios.js";
+import { 
+  trackingSpikeTest as spikeTest, 
+  trackingLoadTest as loadTest, 
+  trackingStressTest as stressTest,
+  errorRate,
+  successRate,
+  createTripTrend,
+  tripDetailTrend,
+  apiRequestsCounter
+} from "./Scenarios.js";
 import { config } from "./Config.js";
 // Get scenario from CLI argument (default: loadTest)
 

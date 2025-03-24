@@ -244,3 +244,56 @@ export let options = {
      - Grafana
      - Prometheus
      - Datadog
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     # Run Load Test
+k6 run main.js -e SCENARIO=loadTest
+
+# Run Stress Test
+k6 run main.js -e SCENARIO=stressTest
+
+# Run Spike Test
+k6 run main.js -e SCENARIO=spikeTest
+
+# Run with output to JSON for further analysis
+k6 run --out json=results.json main.js -e SCENARIO=loadTest
+
+# Run with summary export
+k6 run --summary-export=summary.json main.js -e SCENARIO=loadTest
