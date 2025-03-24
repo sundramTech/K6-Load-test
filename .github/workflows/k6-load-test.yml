@@ -34,8 +34,8 @@ jobs:
             k6 run --out json="results/$(basename "$file" .js).json" "$file" || exit 1
           done
 
-       - name: Upload Test Results  
+      - name: Upload Test Results  
         uses: actions/upload-artifact@v4  
         with:  
           name: k6-results  
-          path: results/
+          path: results/*.json
