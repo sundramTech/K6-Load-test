@@ -34,8 +34,11 @@ jobs:
             k6 run --out json="results/$(basename "$file" .js).json" "$file" || exit 1
           done
 
+      - name: Debug: Check Results Directory  
+        run: ls -l results/ || echo "Results directory is empty or does not exist"
+
       - name: Upload Test Results  
         uses: actions/upload-artifact@v4  
         with:  
           name: k6-results  
-          path: results/*.json
+          path: results/
