@@ -30,9 +30,31 @@ jobs:
           mkdir -p results
           shopt -s nullglob  # Avoid errors if no files exist
           
-          for file in tests/purchase_order/*.js tests/scenarios/*.js tests/tracking_service/*.js; do
-            echo "Running $file..."
-            k6 run --out json="results/$(basename "$file" .js).json" "$file" || exit 1
+          # Define test directories
+          TEST_DIRS=(
+            "tests/purchase_order"
+            "tests/scenarios"
+            "tests/tracking_service"
+            "tests/logistics"
+            "tests/access_creation"
+            "tests/invoice"
+            "tests/warehouse"
+            "tests/trade"          # Added trade directory
+          )
+
+          # Run tests from each directory
+          for dir in "${TEST_DIRS[@]}"; do
+            if [ -d "$dir" ]; then
+              echo "Running tests in $dir..."
+              for file in "$dir"/*.js; do
+                if [[ $file != *"Scenarios.js" ]]; then  # Skip Scenarios.js files
+                  echo "Running $file..."
+                  k6 run --out json="results/$(basename "$file" .js).json" "$file" || exit 1
+                fi
+              done
+            else
+              echo "Directory $dir not found, skipping..."
+            fi
           done
 
           echo "Checking generated results:"
@@ -43,3 +65,32 @@ jobs:
         with:  
           name: k6-results  
           path: results/*.json  
+
+      - name: Generate Test Summary
+        if: always()
+        run: |
+          echo "## K6 Load Test Results" > test-summary.md
+          echo "" >> test-summary.md
+          for result in results/*.json; do
+            if [ -f "$result" ]; then
+              test_name=$(basename "$result" .json)
+              echo "### $test_name" >> test-summary.md
+              echo "\`\`\`" >> test-summary.md
+              jq -r '.metrics | {
+                "Total Requests": .iterations.count,
+                "Failed Requests": .http_req_failed.fails,
+                "Average Response Time": .http_req_duration.avg,
+                "95th Percentile": .http_req_duration["p(95)"],
+                "Success Rate": (.iterations.count - .http_req_failed.fails) / .iterations.count * 100
+              }' "$result" >> test-summary.md
+              echo "\`\`\`" >> test-summary.md
+              echo "" >> test-summary.md
+            fi
+          done
+
+      - name: Upload Test Summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-summary
+          path: test-summary.md

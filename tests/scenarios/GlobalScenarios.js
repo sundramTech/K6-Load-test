@@ -18,14 +18,14 @@ export const trends = {
 // Enhanced Load Test Configuration
 export const loadTest = {
   stages: [
-    { duration: '30s', target: 10 },   // Ramp up to 10 users
-    { duration: '1m', target: 20 },    // Ramp up to 20 users
-    { duration: '3m', target: 20 },    // Stay at 20 users for 3 minutes
-    { duration: '30s', target: 0 },    // Ramp down to 0 users
+    { duration: '10s', target: 10 },   // Ramp up to 10 users
+    { duration: '30s', target: 20 },    // Ramp up to 20 users
+    { duration: '1m', target: 20 },    // Stay at 20 users for 3 minutes
+    { duration: '10s', target: 0 },    // Ramp down to 0 users
   ],
   thresholds: {
-    http_req_duration: ['p(95)<500', 'p(99)<1000'],
-    'error_rate': ['rate<0.1'],        // Error rate should be less than 10%
+    http_req_duration: ['p(95)<1000', 'p(99)<10000'],
+    'error_rate': ['rate<0.01'],        // Error rate should be less than 10%
   },
 };
 

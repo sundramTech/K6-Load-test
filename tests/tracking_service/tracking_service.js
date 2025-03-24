@@ -49,7 +49,7 @@ export default function () {
     },
     name: "Namd kumar singh",
     additional_info: { vehicle_number: "Up56AT2072" },
-    mobile_number_for_tracking: "8294913792",
+    mobile_number_for_tracking: "7906411090",
   });
 
   responses.push(http.post(`${config.BASE_URL}${config.ENDPOINTS.CREATE_TRIP}`, tripPayload, { headers: config.HEADERS }));
@@ -61,7 +61,7 @@ export default function () {
   let changeNumberPayload = JSON.stringify({
     encrypted_trip_id: config.TRIP_IDS.ENCRYPTED_TRIP_ID,
     trip_number: config.TRIP_IDS.TRIP_NUMBER,
-    mobile_number_for_tracking: "7906411090",
+    mobile_number_for_tracking: "7906411091",
   });
 
   responses.push(http.patch(`${config.BASE_URL}${config.ENDPOINTS.EDIT_MOBILE}`, changeNumberPayload, { headers: config.HEADERS }));
@@ -115,8 +115,16 @@ export default function () {
   // Validate responses
   for (let i = 0; i < responses.length; i++) {
     check(responses[i], {
-      [`Request ${i + 1}: Status is ${responses[i].status}`]: (r) => r.status === 200,
+      [`Request ${i + 1}: Status is 200`]: (r) => r.status === 200,
+      [`Request ${i + 1}: Response time under 2s`]: (r) => r.timings.duration < 2000,
+      [`Request ${i + 1}: Valid JSON response`]: (r) => r.json() !== null,
     });
+
+    // Add error logging
+    if (responses[i].status !== 200) {
+      console.log(`Failed request ${i + 1}: ${responses[i].status}`);
+      console.log(`Response body: ${responses[i].body}`);
+    }
   }
 
   sleep(1); // Add delay between requests
