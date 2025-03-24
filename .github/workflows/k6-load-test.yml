@@ -12,7 +12,7 @@ jobs:
 
     steps:  
       - name: Checkout Repository  
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4  
 
       - name: Update Package List  
         run: sudo apt-get update  
@@ -23,55 +23,23 @@ jobs:
           curl -s https://dl.k6.io/key.gpg | sudo apt-key add -
           echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
           sudo apt-get update
-          sudo apt-get install -y k6
-
-      - name: Verify Test Directory Structure
-        run: |
-          # Check if tests directory exists
-          if [ ! -d "tests" ]; then
-            echo "Creating tests directory..."
-            mkdir -p tests
-          fi
-          
-          # Check if there are any test files
-          if [ ! "$(ls -A tests/*.js 2>/dev/null)" ]; then
-            echo "No test files found. Creating a sample test file..."
-            cat > tests/sample_test.js << 'EOF'
-import http from 'k6/http';
-import { sleep } from 'k6';
-
-export default function() {
-  http.get('https://test.k6.io');
-  sleep(1);
-}
-EOF
-          fi
-          
-          echo "Test files in tests directory:"
-          ls -la tests/
+          sudo apt-get install -y k6  
 
       - name: Run Load Tests  
         run: |
           mkdir -p results
-          shopt -s nullglob  # Ensures no errors if no .js files exist
+          shopt -s nullglob  # Avoid errors if no files exist
           
-          # List all test files that will be processed
-          echo "Available test files:"
-          ls -la tests/*.js || echo "No test files found"
-          
-          for file in tests/*.js; do
+          for file in tests/purchase_order/*.js tests/scenarios/*.js tests/tracking_service/*.js; do
             echo "Running $file..."
-            k6 run --out json="results/$(basename "$file" .js).json" "$file" || echo "Test $file failed with exit code $?"
+            k6 run --out json="results/$(basename "$file" .js).json" "$file" || exit 1
           done
-          
-          # Debug: show the contents of the results directory
-          echo "Contents of results directory:"
-          ls -la results/ || echo "results directory is empty or doesn't exist"
+
+          echo "Checking generated results:"
+          ls -l results/ || echo "No test results found!"
 
       - name: Upload Test Results  
         uses: actions/upload-artifact@v4  
         with:  
           name: k6-results  
-          path: results/
-          if-no-files-found: warn
-        continue-on-error: true
+          path: results/*.json  
