@@ -1,6 +1,4 @@
 
-import "./libs/shim/urijs.js";
-
 export let options = { maxRedirects: 4 };
 
 const Request = Symbol.for("request");
