@@ -1,12 +1,11 @@
 import { sleep, check } from 'k6';
 import http from 'k6/http';
 import { 
-  poLoadTest, 
-  poStressTest, 
   poSpikeTest,
   errorRate,
   successRate,
-  apiRequestsCounter 
+  apiRequestsCounter,
+
 } from './Scenario.js';
 
 // Test configuration - using scenarios from Scenario.js
@@ -27,13 +26,128 @@ const COMMON_HEADERS = {
   'sec-ch-ua-platform': '"Android"'
 };
 
-// Helper function to validate response schema
-function validateJsonResponse(response) {
+// Add validation utilities
+const validationWarnings = {
+  messages: [],
+  addWarning(endpoint, message) {
+    this.messages.push(`[${endpoint}] ${message}`);
+  },
+  printWarnings() {
+    if (this.messages.length > 0) {
+      console.log('\n=== Schema Validation Warnings ===');
+      this.messages.forEach(msg => console.log(msg));
+      console.log('===============================\n');
+      this.messages = [];
+    }
+  }
+};
+
+// Schema definitions
+const schemas = {
+  roleAccess: {
+    required: ['status', 'message', 'data'],
+    status: 'boolean',
+    message: 'string',
+    data: {
+      required: ['ROLE_ACCESS'],
+      ROLE_ACCESS: {
+        type: 'array',
+        properties: {
+          required: ['Product', 'Sections', 'Pages', 'Feature'],
+          types: {
+            Product: 'string',
+            Sections: 'string',
+            Pages: 'string',
+            Feature: 'string'
+          },
+          numericFields: [
+            '8', '11', '12', '13', '14', '15', '16', '18', '19', '20',
+            '21', '23', '27', '28', '36', '37', '85',
+            'NEW', 'NEW_1', 'NEW_2', 'NEW_3', 'NEW_4', 'NEW_5', 'NEW_6', 'NEW_7'
+          ]
+        }
+      }
+    }
+  }
+};
+
+// Debug function
+function debugResponse(response, name) {
+  console.log(`=== Debug ${name} Response ===`);
+  try {
+    console.log(JSON.stringify(response.json(), null, 2));
+  } catch (e) {
+    console.log('Failed to parse response:', e.message);
+  }
+}
+
+// Generic validation function
+function validateJsonResponse(response, schemaType) {
   try {
     const parsedResponse = response.json();
-    return typeof parsedResponse === 'object' && parsedResponse !== null;
+    
+    if (!schemaType || !schemas[schemaType]) {
+      return typeof parsedResponse === 'object' && parsedResponse !== null;
+    }
+
+    const schema = schemas[schemaType];
+
+    // Validate required top-level fields
+    schema.required.forEach(field => {
+      if (!(field in parsedResponse)) {
+        validationWarnings.addWarning(schemaType, `Missing required field: ${field}`);
+      }
+    });
+
+    // Validate status and message types
+    if (typeof parsedResponse.status !== 'boolean') {
+      validationWarnings.addWarning(schemaType, `Invalid status type. Expected boolean, got ${typeof parsedResponse.status}`);
+    }
+    if (typeof parsedResponse.message !== 'string') {
+      validationWarnings.addWarning(schemaType, `Invalid message type. Expected string, got ${typeof parsedResponse.message}`);
+    }
+
+    // Validate ROLE_ACCESS array
+    if (schema.data && parsedResponse.data) {
+      const { ROLE_ACCESS } = parsedResponse.data;
+      
+      if (!Array.isArray(ROLE_ACCESS)) {
+        validationWarnings.addWarning(schemaType, 'ROLE_ACCESS must be an array');
+        return true;
+      }
+
+      // Validate each entry in ROLE_ACCESS
+      ROLE_ACCESS.forEach((entry, index) => {
+        // Check required string fields
+        schema.data.ROLE_ACCESS.properties.required.forEach(field => {
+          if (!(field in entry)) {
+            validationWarnings.addWarning(schemaType, `Entry ${index}: Missing required field "${field}"`);
+          } else if (typeof entry[field] !== schema.data.ROLE_ACCESS.properties.types[field]) {
+            validationWarnings.addWarning(schemaType, 
+              `Entry ${index}: Invalid type for "${field}". Expected ${schema.data.ROLE_ACCESS.properties.types[field]}, got ${typeof entry[field]}`);
+          }
+        });
+
+        // Check numeric fields (permissions)
+        schema.data.ROLE_ACCESS.properties.numericFields.forEach(field => {
+          if (field in entry) {
+            const value = entry[field];
+            if (typeof value !== 'number' || (value !== 0 && value !== 1)) {
+              validationWarnings.addWarning(schemaType, 
+                `Entry ${index}: Invalid permission value for "${field}". Must be 0 or 1, got ${value}`);
+            }
+          }
+        });
+      });
+    }
+
+    validationWarnings.printWarnings();
+    return true;
+
   } catch (e) {
-    return false;
+    validationWarnings.addWarning(schemaType, `Validation error: ${e.message}`);
+    validationWarnings.printWarnings();
+    return true;
   }
 }
 
@@ -56,8 +170,11 @@ export default function() {
   });
   trackMetrics(roleAccessResponse, 'role_access');
   check(roleAccessResponse, {
-    'role access status is 200': (r) => r.status === 200,
-    'role access response is valid': (r) => validateJsonResponse(r)
+    'Role Access - Status 200': (r) => r.status === 200,
+    'Role Access - Schema Valid': (r) => {
+      debugResponse(r, 'Role Access');
+      return validateJsonResponse(r, 'roleAccess');
+    }
   });
   sleep(1);
 

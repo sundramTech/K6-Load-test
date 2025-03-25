@@ -1,3 +1,5 @@
+import http from 'k6/http';
+
 export const config = {
     BASE_URL: "https://dev-tracking.saudabooks.com",
   
@@ -27,13 +29,3 @@ export const config = {
     }
     
   };
-  export default function () {
-    console.log("Config file loaded successfully.");
-    
-    
-    let res = http.get(`${config.BASE_URL}${config.ENDPOINTS.FETCH_STATES}`, {
-      headers: config.HEADERS
-    });
-  
-    console.log(`Response status: ${res.status}`);
-  }

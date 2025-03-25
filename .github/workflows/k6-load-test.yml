@@ -81,7 +81,7 @@ jobs:
                 "Failed Requests": .http_req_failed.fails,
                 "Average Response Time": .http_req_duration.avg,
                 "95th Percentile": .http_req_duration["p(95)"],
-                "Success Rate": (.iterations.count - .http_req_failed.fails) / .iterations.count * 100
+                "Success Rate": ((.iterations.count - .http_req_failed.fails) * 100 | . / .iterations.count)
               }' "$result" >> test-summary.md
               echo "\`\`\`" >> test-summary.md
               echo "" >> test-summary.md

@@ -34,18 +34,6 @@ export const trackingSpikeTest = {
 // Re-export needed metrics
 export { errorRate, successRate, apiRequestsCounter };
 export const { 
-  createTripTrend,
-  tripDetailTrend 
+  createTripTrend = trends.trend('create_trip_duration'),
+  tripDetailTrend = trends.trend('trip_detail_duration')
 } = trends;
-
-
-export default function () {
-  console.log("Config file loaded successfully.");
-  
-  // Optional: Make a test API call to verify config
-  let res = http.get(`${config.BASE_URL}${config.ENDPOINTS.FETCH_STATES}`, {
-    headers: config.HEADERS
-  });
-
-  console.log(`Response status: ${res.status}`);
-}

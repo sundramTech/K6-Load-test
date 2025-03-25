@@ -1,3 +1,5 @@
+import http from 'k6/http';
+
 export const config = {
   BASE_URL: "https://dev-ml.farmartos.com/",
   
