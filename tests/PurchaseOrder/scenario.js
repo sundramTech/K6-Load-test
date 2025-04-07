@@ -6,7 +6,7 @@ import {
   successRate,
   trends,
   apiRequestsCounter
-} from '../../tests/scenarios/GlobalScenarios.js';
+} from '../Scenarios/global_scenarios.js';
 
 // Extend the base configurations with PO-specific thresholds
 export const poLoadTest = {

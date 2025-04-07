@@ -6,7 +6,7 @@ import {
   errorRate, 
   successRate, 
   apiRequestsCounter 
-} from '../scenarios/GlobalScenarios.js';
+} from '../Scenarios/GlobalScenarios.js';
 
 // Define invoice specific trends
 const invoiceTrends = {

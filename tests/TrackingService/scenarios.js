@@ -6,7 +6,7 @@ import {
   successRate,
   trends,
   apiRequestsCounter
-} from '../scenarios/GlobalScenarios.js';
+} from '../Scenarios/global_scenarios.js';
 
 // Extend the base configurations with tracking-specific thresholds
 export const trackingLoadTest = {

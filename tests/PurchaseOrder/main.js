@@ -6,7 +6,7 @@ import {
   successRate,
   apiRequestsCounter,
 
-} from './Scenario.js';
+} from './scenario.js';
 
 // Test configuration - using scenarios from Scenario.js
 export const options = poSpikeTest; // You can change this to poStressTest or poLoadTest based on your needs
@@ -26,7 +26,7 @@ const COMMON_HEADERS = {
   'sec-ch-ua-platform': '"Android"'
 };
 
-// Add validation utilities
+// Add a warning collector
 const validationWarnings = {
   messages: [],
   addWarning(endpoint, message) {
@@ -37,7 +37,7 @@ const validationWarnings = {
       console.log('\n=== Schema Validation Warnings ===');
       this.messages.forEach(msg => console.log(msg));
       console.log('===============================\n');
-      this.messages = [];
+      this.messages = []; // Clear messages after printing
     }
   }
 };
@@ -59,12 +59,159 @@ const schemas = {
             Sections: 'string',
             Pages: 'string',
             Feature: 'string'
-          },
-          numericFields: [
-            '8', '11', '12', '13', '14', '15', '16', '18', '19', '20',
-            '21', '23', '27', '28', '36', '37', '85',
-            'NEW', 'NEW_1', 'NEW_2', 'NEW_3', 'NEW_4', 'NEW_5', 'NEW_6', 'NEW_7'
-          ]
+          }
+        },
+        allowedFields: [
+          '8', '11', '12', '13', '14', '15', '16', '18', '19', '20',
+          '21', '23', '24', '27', '28', '36', '37', '38', '81', '85',
+          'NEW', 'NEW_1', 'NEW_2', 'NEW_3', 'NEW_4', 'NEW_5', 'NEW_6', 'NEW_7'
+        ]
+      }
+    }
+  },
+
+  // Generic error response schema
+  errorResponse: {
+    required: ['message'],
+    types: {
+      message: 'string'
+    }
+  },
+
+  // Master Sample Detail schema with error handling
+  masterSampleDetail: {
+    required: ['status', 'message'],
+    types: {
+      status: 'boolean',
+      message: 'string'
+    },
+    // Only validate data if status is true
+    conditionalData: {
+      when: 'status',
+      isTrue: {
+        required: [
+          'CREATE_PO', 'PENDING_FOR_SO_MAPPING', 'DISPATCH_PENDING',
+          'PAYMENT_REQUEST', 'PAYMENT_INITIATED', 'PARTIAL_PAYMENT', 'GRN_DEDUCTION'
+        ],
+        types: {
+          CREATE_PO: 'number',
+          PENDING_FOR_SO_MAPPING: 'number',
+          DISPATCH_PENDING: 'number',
+          PAYMENT_REQUEST: 'number',
+          PAYMENT_INITIATED: 'number',
+          PARTIAL_PAYMENT: 'number',
+          GRN_DEDUCTION: 'number'
+        }
+      }
+    }
+  },
+
+  // 2. PO Approval Details Schema
+  poApprovalDetails: {
+    required: ['status', 'message', 'data'],
+    types: {
+      status: 'boolean',
+      message: 'string',
+      data: {
+        required: ['sample_details', 'po_finalised_details', 'f_o_r', 'dispatch_by', 'unloading_charges_to_be_borne_by'],
+        types: {
+          sample_details: 'object',
+          po_finalised_details: 'object',
+          f_o_r: 'number',
+          dispatch_by: 'number',
+          unloading_charges_to_be_borne_by: 'number'
+        }
+      }
+    }
+  },
+
+  // 3. Termination Reasons Schema
+  terminationReasons: {
+    required: ['status', 'message', 'data'],
+    types: {
+      status: 'boolean',
+      message: 'string',
+      data: {
+        required: ['po_termination_reason_list'],
+        types: {
+          po_termination_reason_list: {
+            type: 'array',
+            properties: {
+              required: ['id', 'name'],
+              types: {
+                id: 'number',
+                name: 'string'
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+
+  // 4. Purchase Order Details Schema
+  purchaseOrderDetails: {
+    required: ['_id', 'farmartId', 'status', 'quantityInTon', 'amountPerQuintal'],
+    types: {
+      _id: 'number',
+      farmartId: 'string',
+      status: 'number',
+      quantityInTon: 'number',
+      amountPerQuintal: 'number'
+    }
+  },
+
+  // 5. Trip Status Schema
+  tripStatus: {
+    required: ['status', 'message', 'data'],
+    types: {
+      status: 'boolean',
+      message: 'string',
+      data: {
+        required: ['trip_id', 'consent_status', 'trip_status', 'is_tracking_enabled', 'po_status', 'farmart_id'],
+        types: {
+          trip_id: 'string',
+          consent_status: 'number',
+          trip_status: 'number',
+          is_tracking_enabled: 'boolean',
+          po_status: 'number',
+          farmart_id: 'string'
+        }
+      }
+    }
+  },
+
+  // 6. Payment Details Schema
+  paymentDetails: {
+    required: ['status', 'message', 'data'],
+    types: {
+      status: 'boolean',
+      message: 'string',
+      data: {
+        required: ['po_id', 'payment_for', 'is_data_present'],
+        types: {
+          po_id: 'string',
+          payment_for: 'string',
+          is_data_present: 'boolean'
+        }
+      }
+    }
+  },
+
+  // 7. Deduction Reasons Schema (works for both retailer and transport)
+  deductionReasons: {
+    required: ['status', 'message', 'data'],
+    types: {
+      status: 'boolean',
+      message: 'string',
+      data: {
+        type: 'array',
+        properties: {
+          required: ['id', 'name'],
+          types: {
+            id: 'number',
+            name: 'string'
+          }
         }
       }
     }
@@ -81,73 +228,73 @@ function debugResponse(response, name) {
   }
 }
 
-// Generic validation function
+// Updated validation function
 function validateJsonResponse(response, schemaType) {
   try {
+    if (!response || !response.body) {
+      validationWarnings.addWarning(schemaType || 'undefined', 
+        'Response or response body is null - possible request failure');
+      return false;
+    }
+
     const parsedResponse = response.json();
     
+    // Handle error responses
+    if (parsedResponse.message && (!parsedResponse.status || parsedResponse.status === false)) {
+      return validateJsonResponse(response, 'errorResponse');
+    }
+
     if (!schemaType || !schemas[schemaType]) {
       return typeof parsedResponse === 'object' && parsedResponse !== null;
     }
 
     const schema = schemas[schemaType];
+    let isValid = true;
 
-    // Validate required top-level fields
-    schema.required.forEach(field => {
+    // Validate required fields and their types
+    for (const field of schema.required) {
       if (!(field in parsedResponse)) {
         validationWarnings.addWarning(schemaType, `Missing required field: ${field}`);
+        isValid = false;
+      } else if (schema.types && schema.types[field] && 
+                typeof parsedResponse[field] !== schema.types[field]) {
+        validationWarnings.addWarning(schemaType,
+          `Invalid type for ${field}. Expected ${schema.types[field]}, got ${typeof parsedResponse[field]}`);
+        isValid = false;
       }
-    });
-
-    // Validate status and message types
-    if (typeof parsedResponse.status !== 'boolean') {
-      validationWarnings.addWarning(schemaType, `Invalid status type. Expected boolean, got ${typeof parsedResponse.status}`);
-    }
-    if (typeof parsedResponse.message !== 'string') {
-      validationWarnings.addWarning(schemaType, `Invalid message type. Expected string, got ${typeof parsedResponse.message}`);
     }
 
-    // Validate ROLE_ACCESS array
-    if (schema.data && parsedResponse.data) {
-      const { ROLE_ACCESS } = parsedResponse.data;
-      
-      if (!Array.isArray(ROLE_ACCESS)) {
-        validationWarnings.addWarning(schemaType, 'ROLE_ACCESS must be an array');
-        return true;
+    // Handle conditional data validation
+    if (schema.conditionalData && parsedResponse[schema.conditionalData.when] === true) {
+      const dataSchema = schema.conditionalData.isTrue;
+      const data = parsedResponse.data;
+
+      if (!data) {
+        validationWarnings.addWarning(schemaType, 'Missing data object for successful response');
+        isValid = false;
+      } else {
+        for (const field of dataSchema.required) {
+          if (!(field in data)) {
+            validationWarnings.addWarning(schemaType, `Missing required field in data: ${field}`);
+            isValid = false;
+          } else if (dataSchema.types && dataSchema.types[field] && 
+                    typeof data[field] !== dataSchema.types[field]) {
+            validationWarnings.addWarning(schemaType,
+              `Invalid type for data.${field}. Expected ${dataSchema.types[field]}, got ${typeof data[field]}`);
+            isValid = false;
+          }
+        }
       }
-
-      // Validate each entry in ROLE_ACCESS
-      ROLE_ACCESS.forEach((entry, index) => {
-        // Check required string fields
-        schema.data.ROLE_ACCESS.properties.required.forEach(field => {
-          if (!(field in entry)) {
-            validationWarnings.addWarning(schemaType, `Entry ${index}: Missing required field "${field}"`);
-          } else if (typeof entry[field] !== schema.data.ROLE_ACCESS.properties.types[field]) {
-            validationWarnings.addWarning(schemaType, 
-              `Entry ${index}: Invalid type for "${field}". Expected ${schema.data.ROLE_ACCESS.properties.types[field]}, got ${typeof entry[field]}`);
-          }
-        });
-
-        // Check numeric fields (permissions)
-        schema.data.ROLE_ACCESS.properties.numericFields.forEach(field => {
-          if (field in entry) {
-            const value = entry[field];
-            if (typeof value !== 'number' || (value !== 0 && value !== 1)) {
-              validationWarnings.addWarning(schemaType, 
-                `Entry ${index}: Invalid permission value for "${field}". Must be 0 or 1, got ${value}`);
-            }
-          }
-        });
-      });
     }
 
     validationWarnings.printWarnings();
-    return true;
+    return isValid;
 
   } catch (e) {
-    validationWarnings.addWarning(schemaType, `Validation error: ${e.message}`);
+    validationWarnings.addWarning(schemaType || 'undefined', 
+      `Validation error: ${e.message}`);
     validationWarnings.printWarnings();
-    return true;
+    return false;
   }
 }
 
@@ -164,17 +311,20 @@ export default function() {
   const PO_ID = '16248';
   const SO_ID = '4877';
 
+  // Add debug logging before each request
+  console.log('=== Request Debug Info ===');
+  console.log('Using lot_id:', LOT_ID);
+  console.log('lot_id type:', typeof LOT_ID);
+  console.log('Request URL:', `${BASE_URL}v3/master_sample/detail?lot_id=${LOT_ID}`);
+
   // 1. User Role Access Check
   let roleAccessResponse = http.post(`${BASE_URL}v1/role_config/user_role_access`, null, {
     headers: COMMON_HEADERS
   });
   trackMetrics(roleAccessResponse, 'role_access');
   check(roleAccessResponse, {
-    'Role Access - Status 200': (r) => r.status === 200,
-    'Role Access - Schema Valid': (r) => {
-      debugResponse(r, 'Role Access');
-      return validateJsonResponse(r, 'roleAccess');
-    }
+    'role access status is 200': (r) => r.status === 200,
+    'role access schema validated': (r) => validateJsonResponse(r, 'roleAccess')
   });
   sleep(1);
 
@@ -213,7 +363,9 @@ export default function() {
   // 4. Master Sample Detail
   let masterSampleResponse = http.get(`${BASE_URL}v3/master_sample/detail`, {
     headers: COMMON_HEADERS,
-    params: { lot_id: LOT_ID }
+    params: { 
+      lot_id: LOT_ID
+    }
   });
   trackMetrics(masterSampleResponse, 'master_sample_detail');
   check(masterSampleResponse, {
@@ -224,11 +376,14 @@ export default function() {
   // 5. PO Approval Details
   let poApprovalResponse = http.get(`${BASE_URL}v1/master_sample/po_to_approve_details`, {
     headers: COMMON_HEADERS,
-    params: { lot_id: LOT_ID }
+    params: { 
+      lot_id: LOT_ID
+    }
   });
   trackMetrics(poApprovalResponse, 'po_approval');
   check(poApprovalResponse, {
-    'PO approval status is 200': (r) => r.status === 200
+    'PO approval status is 200': (r) => r.status === 200,
+    'PO approval schema is valid': (r) => validateJsonResponse(r, 'poApprovalDetails')
   });
   sleep(1);
 
@@ -238,7 +393,8 @@ export default function() {
   });
   trackMetrics(terminationResponse, 'termination_reasons');
   check(terminationResponse, {
-    'termination reasons status is 200': (r) => r.status === 200
+    'termination reasons status is 200': (r) => r.status === 200,
+    'termination reasons schema is valid': (r) => validateJsonResponse(r, 'terminationReasons')
   });
   sleep(1);
 
@@ -271,7 +427,9 @@ export default function() {
   // 9. Get PO Mapping Transaction Details
   let mappingDetailsResponse = http.get(`${BASE_URL}v1/master_sample/po_mapping_transaction_details`, {
     headers: COMMON_HEADERS,
-    params: { lot_id: LOT_ID }
+    params: { 
+      lot_id: LOT_ID
+    }
   });
   trackMetrics(mappingDetailsResponse, 'mapping_details');
   check(mappingDetailsResponse, {

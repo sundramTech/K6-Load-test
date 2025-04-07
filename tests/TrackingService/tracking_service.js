@@ -10,7 +10,7 @@ import {
   tripDetailTrend,
   apiRequestsCounter
 } from "./Scenarios.js";
-import { config } from "./Config.js";
+import { config } from "./config.js";
 // Get scenario from CLI argument (default: loadTest)
 
 const scenarioName = __ENV.SCENARIO || "loadTest"; 

@@ -6,7 +6,7 @@ import {
   errorRate, 
   successRate, 
   apiRequestsCounter 
-} from '../scenarios/GlobalScenarios.js';
+} from '../Scenarios/global_scenarios.js';
 
 // Define access creation specific trends
 const accessTrends = {
